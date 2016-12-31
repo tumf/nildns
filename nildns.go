@@ -13,32 +13,35 @@ import (
 var (
   address = flag.String("address", "127.0.0.1:53", "Listen address")
   conf = flag.String("conf", "/etc/resolv.conf", "Path to resolv.conf")
+  tcp = flag.Bool("tcp", false, "Enable TCP")
 )
 
 func main() {
   flag.Parse()
-  udpServer := &dns.Server{ Addr: *address, Net: "udp" }
-  tcpServer := &dns.Server{ Addr: *address, Net: "tcp" }
+  servers := []*dns.Server { &dns.Server{ Addr: *address, Net: "udp" } }
+  if *tcp {
+    servers = append(servers, &dns.Server{ Addr: *address, Net: "tcp" })
+  }
 
   dns.HandleFunc(".", handler)
-  go func() {
-    if err := udpServer.ListenAndServe(); err != nil {
-      log.Fatal(err)
-    }
-  }()
-  go func() {
-    if err := tcpServer.ListenAndServe(); err != nil {
-      log.Fatal(err)
-    }
-  }()
+  for _, server := range servers {
+    go func(server *dns.Server) {
+      if err := server.ListenAndServe(); err != nil {
+        log.Fatal(err)
+      }
+    }(server)
+  }
 
   // Wait for SIGINT or SIGTERM
   sigs := make(chan os.Signal, 1)
   signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
   <-sigs
 
-  udpServer.Shutdown()
-  tcpServer.Shutdown()
+  for _, server := range servers {
+    go func(server *dns.Server) {
+      server.Shutdown()
+    }(server)
+  }
 }
 
 func handler(w dns.ResponseWriter, req *dns.Msg) {
