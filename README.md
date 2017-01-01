@@ -6,6 +6,7 @@ A minimum DNS for nginx + Docker.
 # What's this?
 
 This is a minimum DNS server which is designed for Nginx reverse proxy liked to Docker containers.
+`nildns` uses < 2kB memory and 5 times less memory than `go-dnsmasq-min`.
 
 #### Run
 
