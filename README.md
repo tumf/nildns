@@ -23,4 +23,6 @@ Usage of nildns
     Path to resolv.conf (default "/etc/resolv.conf")
   -tcp
     Enable TCP
+  -ttl int
+    Default TTL (default 10)
 ```
