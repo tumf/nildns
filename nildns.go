@@ -8,6 +8,7 @@ import (
   "fmt"
   "flag"
   "github.com/miekg/dns"
+  "github.com/miekg/dns/dnsutil"
 )
 
 var (
@@ -57,12 +58,14 @@ func handler(w dns.ResponseWriter, req *dns.Msg) {
   var res *dns.Msg
 
   // Try to resolv from /etc/hosts
-  addrs, _ := net.LookupHost(name)
+  addrs, _ := net.LookupHost(dnsutil.TrimDomainName(name, "."))
   if len(addrs) > 0 {
     var rrs []dns.RR
     for _, addr := range addrs {
-      if net.ParseIP(addr) == nil { continue }
-      rr, _ := dns.NewRR(name + " " + fmt.Sprint(*ttl) + " IN A " + addr)
+      ip := net.ParseIP(addr)
+      if ip == nil { continue }
+      if ip.IsUnspecified() || ip.To4() == nil { continue }
+      rr, _ := dns.NewRR(name + " " + fmt.Sprint(*ttl) + " IN A " + ip.To4().String())
       rrs = append(rrs, rr)
     }
     res = &dns.Msg{}
