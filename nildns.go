@@ -14,6 +14,7 @@ var (
   address = flag.String("address", "127.0.0.1:53", "Listen address")
   conf = flag.String("conf", "/etc/resolv.conf", "Path to resolv.conf")
   tcp = flag.Bool("tcp", false, "Enable TCP")
+  ttl = flag.Int("ttl", 10, "Default TTL")
 )
 
 func main() {
@@ -52,8 +53,26 @@ func handler(w dns.ResponseWriter, req *dns.Msg) {
     return
   }
   // When query type A
-  var res *dns.Msg
   name := req.Question[0].Name
+  var res *dns.Msg
+
+  // Try to resolv from /etc/hosts
+  addrs, _ := net.LookupHost(name)
+  if len(addrs) > 0 {
+    var rrs []dns.RR
+    for _, addr := range addrs {
+      if net.ParseIP(addr) == nil { continue }
+      rr, _ := dns.NewRR(name + " " + fmt.Sprint(*ttl) + " IN A " + addr)
+      rrs = append(rrs, rr)
+    }
+    res = &dns.Msg{}
+    res = res.SetReply(req)
+    res.Answer = rrs;
+    w.WriteMsg(res)
+    return
+  }
+
+  // Search from DNS using /etc/resolv.conf
   reqid := req.Id
   searches := []string {""}
   searches = append(searches,config.Search...)
@@ -78,6 +97,7 @@ func handler(w dns.ResponseWriter, req *dns.Msg) {
   res.SetQuestion(name, dns.TypeA)
   res.Id = reqid
   w.WriteMsg(res)
+  return
 }
 
 func proxy(addr string, w dns.ResponseWriter, req *dns.Msg) *dns.Msg {
@@ -85,7 +105,7 @@ func proxy(addr string, w dns.ResponseWriter, req *dns.Msg) *dns.Msg {
   if _, ok := w.RemoteAddr().(*net.TCPAddr); ok {
     transport = "tcp"
   }
-  c := &dns.Client{Net: transport}
+  c := &dns.Client{ Net: transport }
   res, _, err := c.Exchange(req, addr)
   if err != nil {
     dns.HandleFailed(w, req)
