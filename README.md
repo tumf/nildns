@@ -1,3 +1,5 @@
+[![CircleCI](https://circleci.com/gh/tumf/nildns.svg?style=svg)](https://circleci.com/gh/tumf/nildns)
+
 nildns
 ======
 
