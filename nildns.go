@@ -118,7 +118,6 @@ func proxy(addr string, w dns.ResponseWriter, req *dns.Msg) *dns.Msg {
   res, _, err := c.Exchange(req, addr)
   if err != nil {
     dns.HandleFailed(w, req)
-    return res
   }
   return res
 }
