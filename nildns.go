@@ -16,10 +16,16 @@ var (
   conf = flag.String("conf", "/etc/resolv.conf", "Path to resolv.conf")
   tcp = flag.Bool("tcp", false, "Enable TCP")
   ttl = flag.Int("ttl", 10, "Default TTL")
+  version = flag.Bool("version", false, "Show version")
 )
 
 func main() {
   flag.Parse()
+  if *version {
+    fmt.Println(getVersion())
+    return
+  }
+
   servers := []*dns.Server { &dns.Server{ Addr: *address, Net: "udp" } }
   if *tcp {
     servers = append(servers, &dns.Server{ Addr: *address, Net: "tcp" })
