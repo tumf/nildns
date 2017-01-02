@@ -25,4 +25,6 @@ Usage of nildns
     Enable TCP
   -ttl int
     Default TTL (default 10)
+  -version
+    Show version
 ```
