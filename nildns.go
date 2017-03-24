@@ -56,7 +56,9 @@ func handler(w dns.ResponseWriter, req *dns.Msg) {
   config, _ := dns.ClientConfigFromFile(*conf)
   if req.Question[0].Qtype != dns.TypeA {
     res := proxy(config.Servers[0]+":"+config.Port,w,req)
-    w.WriteMsg(res)
+    if res != nil {
+      w.WriteMsg(res)
+    }
     return
   }
   // When query type A
@@ -88,6 +90,9 @@ func handler(w dns.ResponseWriter, req *dns.Msg) {
   for _, search := range searches {
     req.SetQuestion(dns.Fqdn(name + search), dns.TypeA)
     res = proxy(config.Servers[0]+":"+config.Port,w,req)
+    if res == nil {
+      continue;
+    }
     var rrs []dns.RR
     for _, ansa := range res.Answer {
       switch ansb := ansa.(type) {
@@ -103,9 +108,11 @@ func handler(w dns.ResponseWriter, req *dns.Msg) {
       break;
     }
   }
-  res.SetQuestion(name, dns.TypeA)
-  res.Id = reqid
-  w.WriteMsg(res)
+  if res != nil {
+    res.SetQuestion(name, dns.TypeA)
+    res.Id = reqid
+    w.WriteMsg(res)
+  }
   return
 }
 
